@@ -36,14 +36,16 @@ def _parse_n_lines(infile, n_lines, read_alns, target_seqs, db_type):
 		else:
 			length = -1
 
-		target_seq = create_sequence(target, length, db_type)
+		target_seq = create_sequence(target, length, db_type, detailed=False)
 		target_id = target_seq.get_id()
 		if target_id not in target_seqs:
 			target_seqs[target_id] = target_seq
+		target_seq = target_seqs[target_id]
 
 		if target_id not in [aln.target_id for aln in read_alns[read_id]]:
 			aln = BlastAlignment(read_id, target_id, qstart, qend, tstart, tend, e_value, bitscore)
 			read_alns[read_id].append(aln)
+			#target_seq.alignment.add_location(read_id, tstart, tend)
 
 	return new_reads
 
@@ -104,7 +106,7 @@ def annotate_targets(read_alns, target_seqs):
 	return read_alns, target_seqs
 
 
-def parse_tab_delimited(input_file, db_type, at_once=1e5,
+def parse_tab_delimited(input_file, db_type, at_once=1e5, detailed=False,
 						read_alns=defaultdict(list), target_seqs={},
 						filter_low_scoring=True, annotate=True, entry_cnt=None):
 
@@ -158,7 +160,8 @@ def parse_xml(input_file, db_type, annotate=True, detailed=False, entry_cnt=None
 				read_id = iter_children['Iteration_query-def'].text
 				for hit in hits:
 					hit_children = {e.tag: e for e in hit.getchildren()}
-					target_header = hit_children['Hit_def'].text
+					target_header = hit_children['Hit_id'].text
+					#target_header = hit_children['Hit_def'].text
 					tid = get_seq_id(target_header, db_type)
 					if tid not in target_seqs:
 						target_len = int(hit_children['Hit_len'].text)

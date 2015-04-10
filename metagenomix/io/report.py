@@ -68,7 +68,8 @@ class Report(object):
 			utils.create_dir('%s/composition' % self.output_dir, erase)
 			utils.create_dir('%s/gene_expression' % self.output_dir, erase)
 			utils.create_dir('%s/plots' % self.output_dir, erase)
-		shutil.copyfile('/home/abulovic/BINNER/tools/external/c3/c3.css', '%s/plots/c3.css' % (self.output_dir))
+		c3_css = os.path.join(viz.__path__[0], 'c3.css')
+		shutil.copyfile(c3_css, '%s/plots/c3.css' % (self.output_dir))
 
 
 	def load_original_fasta(self, fasta):

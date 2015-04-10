@@ -48,10 +48,11 @@ def get_extract_subtaxa_parser():
 def extract_reads():
 	parser = get_extract_reads_parser()
 	args = parser.parse_args()
+	file_type = utils.get_file_type(args.orig_fasta)
 
 	with open(args.reads) as fin:
 		reads = [l.strip() for l in fin]
-	out.extract_reads(reads, args.orig_fasta, args.output_file)
+	out.extract_reads(reads, args.orig_fasta, args.output_file, file_type)
 
 
 def extract_subtaxa():

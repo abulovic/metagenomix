@@ -99,7 +99,7 @@ def get_file_type(seq_file):
 		return 'fastq'
 	elif ending in ('sam', 'bam'):
 		return ending
-	elif ending in ('mgb', 'blast', 'blastout'):
+	elif ending in ('mgb', 'blast', 'blastout', 'm8'):
 		return 'blast'
 	elif ending == 'xml':
 		return 'xml'
@@ -177,7 +177,10 @@ def retrieve_tax_ids(target_seqs, db_type):
 
 	with timeit('GI2TAX database querying'):
 		gis = set(map(lambda t: get_gi(t), target_seqs.itervalues()))
-		tax_ids = data_access.get_taxids(gis, 'nucl')
+		if db_type == 'nr':
+			tax_ids = data_access.get_taxids(gis, 'prot')
+		else:
+			tax_ids = data_access.get_taxids(gis, 'nucl')
 		missing_gis = set()
 		for target in target_seqs.itervalues():
 			target.tax_id = tax_ids.get(get_gi(target), -1)

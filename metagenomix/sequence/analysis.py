@@ -13,29 +13,31 @@ class AlignmentLocationError(Exception):
 
 
 class Alignment(object):
-	__slots__ = ('length', 'locations', 'coverage', 'fold')
+	__slots__ = ('length', 'locations', 'coverage', 'fold', 'reads')
 
 	def __init__(self, length):
 		self.length = length
-		self.locations = []
+		self.locations = {}
 		self.fold = 0
 
 
-class SimpleAlignment(Alignment):
+class SimpleAlignment (Alignment):
 	__slots__ = ('mismatches',)
 
-	def add_location(self, tstart, tend, mismatches=0):
+	def add_location(self, read_id, tstart, tend):
 		if (tstart > self.length or tend > self.length):
 			raise AlignmentLocationError(tstart, tend, self.length)
+		tstart = int(tstart)
+		tend = int(tend)
 		if tstart > tend:
 			tstart, tend = tend, tstart
-		self.locations.append((tstart, tend))
+		self.locations[read_id] = (tstart, tend)
 		self.fold += abs(tstart - tend) + 1
 
 	def _get_joint_regions(self):
 		if len(self.locations) <= 1:
-			return self.locations
-		pre = list(self.locations)
+			return self.locations.values()
+		pre = list(self.locations.values())
 		pre.sort()
 		pre = deque(pre)
 		regions = list()
@@ -142,6 +144,12 @@ class Errors(object):
 	def __len__(self):
 		return len(self.errors)
 
+	def keys(self):
+		return self.errors.keys()
+
+	def __getitem__(self, item):
+		return self.errors[item]
+
 def get_error(location, target_ascii, query_ascii):
 	t = chr(target_ascii)
 	q = chr(query_ascii)
@@ -154,14 +162,16 @@ def get_error(location, target_ascii, query_ascii):
 
 
 class DetailedAlignment(Alignment):
-	__slots__ = ('errors',)
+	__slots__ = ('errors', 'reads')
 
 	def __init__(self, length):
 		super(DetailedAlignment, self).__init__(length)
 		self.coverage = np.zeros(length, 'i')
 		self.errors = Errors()
+		self.reads = set()
 
-	def add_location(self, tstart, tend, query, target):
+	def add_location(self, read_id, tstart, tend, query, target):
+		self.reads.add(read_id)
 		if (tstart > self.length or tend > self.length):
 			raise AlignmentLocationError(tstart, tend, self.length)
 		if tstart > tend:

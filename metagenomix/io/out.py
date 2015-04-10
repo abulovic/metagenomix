@@ -183,13 +183,13 @@ def output_reads(reads, out_dir, fname, sep='\n'):
 	with open(out_file, 'w') as fout:
 		fout.write(sep.join(reads))
 
-def extract_reads(reads, original_fasta, output_file):
+def extract_reads(reads, original_fasta, output_file, file_type):
 	reads = set(reads)
 	with nested(open(original_fasta), open(output_file, 'w')) as (fin, fout):
-		records = SeqIO.parse(fin, 'fasta')
+		records = SeqIO.parse(fin, file_type)
 		for rec in records:
 			if rec.name in reads:
-				SeqIO.write(rec, fout, 'fasta')
+				SeqIO.write(rec, fout, file_type)
 
 ''' Outputs the reconstructed portion of a taxonomic tree in json format
 

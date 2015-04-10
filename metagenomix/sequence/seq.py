@@ -23,7 +23,7 @@ class TargetSeq(object):
 				 'alignment']
 
 	@classmethod
-	def from_nt_header(cls, header, length, detailed=False):
+	def from_header(cls, header, length, detailed=False):
 		data = db.parse_nt_header(header)
 		return cls(data['accession'], data['gi'], length, data['description'], detailed)
 
@@ -247,22 +247,20 @@ class CDS(TargetSeq):
 	__slots__ = ('cds', 'nucl_gi',  'prot_gi', 'gene', 'product', 'protein_id')
 
 	@classmethod
-	def from_cds_header(cls, cds_header):
-		cds = '%s_%s' % (cds_header['gb'], cds_header['cds'])
-		tax_id = int(cds_header['taxon'])
-		nucl_gi = int(cds_header['nucl_gi'])
-		locations = re.findall(_location_pattern, cds_header['location'])
-		start, stop = locations[0], locations[-1]
-		length = abs(int(start) - int(stop))
-		prot_gi = int(cds_header.get('prot_gi', -1))
-		protein_id = cds_header.get('protein_id', '')
-		gene = cds_header.get('gene', '')
-		product = cds_header.get('product', '')
+	def from_header(cls, cds_header, length, detailed=False):
+		data = db.parse_cds_header(cds_header)
+		cds = '%s_%s' % (data['gb'], data['cds'])
+		tax_id = int(data['taxon'])
+		nucl_gi = int(data['nucl_gi'])
+		prot_gi = int(data.get('prot_gi', -1))
+		protein_id = data.get('protein_id', '')
+		gene = data.get('gene', '')
+		product = data.get('product', '')
 		return cls(cds, tax_id, nucl_gi, length, prot_gi, protein_id,
-				   gene, product)
+				   gene, product, detailed=detailed)
 
 	def __init__(self, cds, tax, nucl_gi, length, prot_gi=-1,
-				 protein_id='', gene='', product=''):
+				 protein_id='', gene='', product='', detailed=False):
 		super(CDS, self).__init__(cds, nucl_gi, length)
 		self.cds = cds
 		self.tax_id = int(tax)
@@ -272,6 +270,10 @@ class CDS(TargetSeq):
 		self.protein_id = protein_id
 		self.gene = gene
 		self.product = product
+		if detailed:
+			self.alignment = DetailedAlignment(self.length)
+		else:
+			self.alignment = SimpleAlignment(self.length)
 
 	def id(self):
 		return self.cds
@@ -361,11 +363,11 @@ class SamAlignment(Alignment):
 
 def create_sequence(header, length, db_type, detailed=False):
 	if db_type == 'cds':
-		ts = CDS.from_header(header, length, detailed)
+		seq = CDS.from_header(header, length, detailed)
 	elif db_type == 'genome':
 		seq = Genome.from_header(header, length, detailed)
-	elif db_type == 'nt':
-		seq = TargetSeq.from_nt_header(header, length, detailed)
+	elif db_type in ('nt', 'nr'):
+		seq = TargetSeq.from_header(header, length, detailed)
 	return seq
 
 def get_seq_id(header, db_type):

@@ -15,6 +15,7 @@ import metagenomix.io.sam as sam
 import metagenomix.otuassign as otu
 import metagenomix.stats.otu as otu_stats
 from metagenomix.io.report import Report
+import metagenomix.profiling as profiling
 from metagenomix.io.config import parse_config
 
 
@@ -25,6 +26,8 @@ Assign Opearational Taxonomic Units from the BLAST alignment file.
 							version=__version__)
 	parser.add_argument(metavar="<INPUT-FILE>", dest="input_file",
 		help="Blast input file (tabular or xml format)")
+	parser.add_argument(metavar="<ORIGINAL-FASTA>", dest="original_fasta",
+		help="Original fasta file")
 	parser.add_argument(metavar="<OUTPUT-DIR>", dest="output_dir",
 		help="Output directory to store all the alignment analysis files.")
 	parser.add_argument(metavar="<DB-TYPE>", dest="db_type",
@@ -40,20 +43,31 @@ def greedy():
 	if args.read_count != 0:
 		total_read_count = args.read_count
 
+	all_reads = utils.reads_from_fasta(args.original_fasta)
+
 	with Report(args.output_dir, 'microbe') as report:
 
 		file_type = utils.get_file_type(args.input_file)
 
-		with report.timeit('File parsing'):
+		with report.timeit('Parsing %s <%s>' % (args.input_file, utils.get_appropriate_file_size(args.input_file))):
 			if file_type == 'blast':
-				read_alns, target_seqs = blast.parse_tab_delimited(args.input_file, args.db_type)
+				count_entries = blast.get_entry_cnt_tab
+				parse_func = blast.parse_tab_delimited
 			elif file_type in ('sam', 'bam'):
-				binary = True if file_type == 'bam' else False
-				read_alns, target_seqs = sam.parse_cds_sam(args.input_file, args.db_type, binary, total_reads=total_read_count)
+				count_entries = sam.get_entry_cnt_sam
+				parse_func = sam.parse_cds_sam
 			elif file_type == 'xml':
-				read_alns, target_seqs = blast.parse_xml(args.input_file, args.db_type)
+				count_entries = blast.get_entry_cnt_xml
+				parse_func = blast.parse_xml
 			else:
 				raise ValueError('%s alignment format not supported!' % file_type)
+
+			with utils.timeit('Retrieving entry count'):
+				entry_cnt = count_entries(args.input_file)
+				report.mark('\tTotal entries: %d' % entry_cnt)
+			with utils.timeit('File parsing'):
+				read_alns, target_seqs = parse_func(args.input_file, args.db_type, entry_cnt=entry_cnt, detailed=True)
+				report.mark('\tTarget sequences: %d' % len(target_seqs))
 
 		with report.timeit('GI2TAX database querying'):
 			utils.retrieve_tax_ids(target_seqs, args.db_type)
@@ -61,6 +75,9 @@ def greedy():
 		with report.timeit('loading tax tree'):
 			tt = TaxTree()
 			report.mark('Loaded %d nodes.' % len(tt.nodes))
+
+		#profiling.get_read_overlap(target_seqs, read_alns, tt, all_reads)
+		profiling.sequential_read_set_analysis(read_alns, target_seqs, tt)
 
 		coverage_limit = 0.6
 		fold_limit = 1.
@@ -70,7 +87,10 @@ def greedy():
 			report.mark('#Transcripts (before read assignment)  : %d' % len(target_seqs))
 			prefilt_transcripts = otu.greedy_transcript_assign(target_seqs, read_alns)
 			report.mark('#Transcripts (after read assignemnt)   : %d' % len(prefilt_transcripts))
+			#if args.db_type == 'cds':
 			final_transcripts = otu.filter_by_coverage_fold(prefilt_transcripts, 0.6, 1.)
+			#else:
+			#	final_transcripts = prefilt_transcripts
 			report.mark('#Transcripts (after cov-fold filtering): %d' % len(final_transcripts))
 			total_reads = len(read_alns)
 
@@ -110,7 +130,7 @@ def lca():
 	with Report(args.output_dir, 'host-microbe') as report:
 		file_type = utils.get_file_type(args.input_file)
 
-		with report.timeit('file parsing'):
+		with report.timeit('Parsing %s <%s>' % (args.aln_file, utils.get_appropriate_file_size(args.aln_file))):
 			if file_type == 'blast':
 				read_alns, target_seqs = blast.parse_tab_delimited(args.input_file, args.db_type)
 			elif file_type in ('sam', 'bam'):
