@@ -1,0 +1,5 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from metagenomix.scripts.prot_freq_database import create_database
+create_database()

@@ -1,0 +1,5 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from metagenomix.scripts import parse_mgb
+parse_mgb.parse()

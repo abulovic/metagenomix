@@ -1,0 +1,3 @@
+recursive-include README.txt
+recursive-include mpipe taxid2namerank ncbi_tax_tree
+recursive-include mpipe.visualization *.html *.js *.css

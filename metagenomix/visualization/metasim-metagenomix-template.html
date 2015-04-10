@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<body>
+<!-- Load c3.css -->
+<link href="c3.css" rel="stylesheet" type="text/css">
+
+<!-- Load d3.js and c3.js -->
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="c3.min.js"></script>
+
+<div id="chart"></div>
+
+<script>
+var ana_data = {}
+d3.json("%s", function(error, data) {
+  ana_data = data;
+});
+var chart = c3.generate({
+    data: {
+        url: '%s',
+        mimeType: 'json',
+        type : 'bar',
+        keys: {
+                value: ['total', 'true-positive', 'false-positive', 'false-negative'],
+            }
+    },
+    tooltip: {
+        format: {
+            title: function (d) {return ana_data[d].species;},
+        }
+    }
+});
+
+</script>

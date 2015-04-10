@@ -1,0 +1,51 @@
+#! /usr/bin/env python
+from __future__ import absolute_import
+import os
+from argparse import ArgumentParser
+from contextlib import nested
+
+from metagenomix import __version__
+
+def get_dmp2tax_parser():
+	parser = ArgumentParser(usage="""Args: <NODES-DMP> <NAMES-DMP> <OUT-DIR>
+Convert the NCBI taxonomy dmp files to metagenomix TaxTree compatible format.
+""", version=__version__)
+	parser.add_argument(metavar="<NODES-DMP>", dest="nodes_dmp",
+		help="NCBI nodes.dmp file (ftp://ftp.ncbi.nih.gov/pub/taxonomy/))")
+	parser.add_argument(metavar="<NAMES-DMP>", dest="names_dmp",
+		help="NCBI names.dmp file (ftp://ftp.ncbi.nih.gov/pub/taxonomy/)")
+	parser.add_argument(metavar="<OUT-DIR>", dest="out_dir",
+		help="Directory where to store metagenomix TaxTree compatible file.")
+	return parser
+
+def main():
+	parser = get_dmp2tax_parser()
+	args = parser.parse_args()
+
+	tax2rank = {}
+
+	fname = '%s%sncbi_tax_tree' % (args.out_dir, os.path.sep)
+	with nested(open(args.nodes_dmp), open(fname, 'w')) as (fin, fout):
+		for line in fin:
+			data = line.split('|')
+			child = data[0].strip()
+			tax2rank[child] = data[2].strip()
+			parent = data[1].strip()
+			fout.write('%s %s\n' % (child, parent))
+
+	fname = '%s%staxid2namerank' % (args.out_dir, os.path.sep)
+	last_tax = None
+	with nested(open(args.names_dmp), open(fname, 'w')) as (fin, fout):
+		for line in fin:
+			data = line.split('|')
+			tax = data[0].strip()
+			if tax == last_tax:
+				continue
+			name_type = data[3].strip()
+			if name_type == 'scientific name':
+				org_name = data[1].strip()
+				fout.write('%s|%s|%s\n' % (tax, org_name, tax2rank[tax]))
+				last_tax = tax
+
+if __name__ == '__main__':
+	main()

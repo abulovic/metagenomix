@@ -1,0 +1,5 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from metagenomix.scripts.profiling import detailed_profile
+detailed_profile()

@@ -1,0 +1,5 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from metagenomix.scripts import store_data_to_db
+store_data_to_db.store_input()

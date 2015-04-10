@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+
+import time
+import json
+import os, sys
+from argparse import ArgumentParser
+from collections import defaultdict
+from contextlib import contextmanager
+
+from Bio import SeqIO
+
+from metagenomix import __version__
+from metagenomix.tax import TaxTree
+from metagenomix.utils import get_file_type
+
+
+def get_db_analysis_option_parser():
+	parser = ArgumentParser(usage="""db-analysis <INPUT-SEQ-FILE> <OUTPUT-JSON>
+Taxonomic analysis of the database for calculating the quantative representation
+of each species, genus, family, order, class and phylum in terms of number
+and length of genes and representative taxa.
+
+""",
+							version=__version__)
+	parser.add_argument(metavar="<INPUT-SEQ-FILE>", dest="input_file",
+		help="Fasta / Fastq input sequence file")
+	parser.add_argument(metavar="<OUTPUT-JSON>", dest="output_json",
+		help="Output JSON file with database stats.")
+	return parser
+
+@contextmanager
+def timeit(func):
+	print 'STARTED <%s>' % func
+	start = time.time()
+	yield
+	stop = time.time()
+	lasted = stop - start
+	print '<%s> LASTED %.2f s.' % (func, lasted)
+
+def analyze_db(input_file, output_json):
+	file_type = get_file_type(input_file)
+	interesting_ranks = ('species', 'genus', 'family', 'order', 'class', 'phylum')
+
+	# setup the initial dictionaries
+	# Each dictionary has entries for each of the interesting ranks, values
+	# of which are then defaultdicts which remember all the important info
+	tax2gene = dict(map(lambda r: (r, defaultdict(int)), interesting_ranks))
+	tax2subtaxa = dict(map(lambda r: (r, defaultdict(set)), interesting_ranks))
+	# so as not to lose track of all the tax IDs for which we couldn't find
+	# a parent or an entry in the tax tree:
+	unaccounted = defaultdict(set)
+
+	with timeit('TaxTree load'):
+		tt = TaxTree()
+
+	with timeit('Analyzing taxa'):
+		with open(input_file) as fin:
+			records = SeqIO.parse(fin, file_type)
+			for record in records:
+				tax = int(record.name.split('|')[5])
+				# if the tax is not in the tax tree at all
+				if tax not in tt.nodes:
+					unaccounted['norank'].add(tax)
+					continue
+				seq_len = len(record.seq)
+				# let's find all the interesting ranks
+				for rank in interesting_ranks:
+					rank_tax = tt.get_parent_with_rank(tax, rank)
+					if not rank_tax:
+						unaccounted[rank].add(tax)
+						continue
+					tax2gene[rank][rank_tax] += 1
+					tax2subtaxa[rank][rank_tax].add(tax)
+		for rank, tax_dict in tax2subtaxa.iteritems():
+			for t, s in tax_dict.iteritems():
+				tax_dict[t] = len(s)
+
+	with open(output_json, 'w') as fout:
+		output = json.dumps({'tax_to_gene_count': tax2gene, 'tax_2_subtax_count': tax2subtaxa, 'unaccounted': list(unaccounted)})
+		fout.write(output)
+
+if __name__ == '__main__':
+	opt_parser = get_db_analysis_option_parser()
+	namespace = opt_parser.parse_args()
+	analyze_db(namespace.input_file, namespace.output_json)

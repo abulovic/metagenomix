@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<body>
+<!-- Load c3.css -->
+<link href="c3.css" rel="stylesheet" type="text/css">
+
+<!-- Load d3.js and c3.js -->
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="c3.min.js"></script>
+
+<div id="chart"></div>
+
+<script>
+var chart = c3.generate({
+    data: {
+        url: '%s',
+        mimeType: 'json',
+        type : 'pie',
+        onclick: function (d, i) { console.log("onclick", d, i); },
+        onmouseover: function (d, i) { console.log("onmouseover", d, i); },
+        onmouseout: function (d, i) { console.log("onmouseout", d, i); }
+    }
+});
+
+</script>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<body>
+<!-- Load c3.css -->
+<link href="c3.css" rel="stylesheet" type="text/css">
+
+<!-- Load d3.js and c3.js -->
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="c3.min.js"></script>
+
+<div id="chart"></div>
+
+<script>
+var ana_data = %s;
+
+var chart = c3.generate({
+    data: {
+        xs: {
+            hypothetical: 'hypothetical_x',
+            non_hypothetical: 'non_hypothetical_x'
+        },
+        json: %s,
+        type : 'scatter',
+    },
+     axis: {
+        x: {
+            label: 'Coverage',
+            tick: {
+                fit: false
+            }
+        },
+        y: {
+            label: 'Fold'
+        }
+    },
+    tooltip: {
+        format: {
+        },
+        contents: function (d, defaultTitleFormat, defaultValueFormat, color) {
+            var $$ = this, config = $$.config,
+              titleFormat = config.tooltip_format_title || function(name, ratio, id, index) {return ana_data.product[index];},
+              nameFormat = config.tooltip_format_name || function (name) { return name; },
+              valueFormat = config.tooltip_format_value || defaultValueFormat,
+              text, i, title, value, name, bgcolor;
+              idx = d[0].index
+
+              if (d[0].id == 'hyp_covfold') {
+                name = '';
+                title = 'Hypothetical Protein';
+              }
+              else {
+                name = nameFormat(ana_data.gene[d[0].index]);
+                title = ana_data.product[d[0].index];
+              }
+              text = "<table class='" + $$.CLASS.tooltip + "'>" + (title || title === 0 ? "<tr><th colspan='2'>" + title + "</th></tr>" : "");
+              value = '(cov, fold) = (' + d[0].x.toFixed(2) + ', ' + d[0].value.toFixed(2) + ')'
+              bgcolor = $$.levelColor ? $$.levelColor(d[0].value) : color(d[0].id);
+
+              text += "<tr class='" + $$.CLASS.tooltipName + "-" + d[0].id + "'>";
+              text += "<td class='name'><span style='background-color:" + bgcolor + "'></span>" + name + "</td>";
+              text += "<td class='value'>" + value + "</td>";
+              text += "</tr>";
+          return text + "</table>";
+        }
+    }
+});
+
+</script>
