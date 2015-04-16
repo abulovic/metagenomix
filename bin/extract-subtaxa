@@ -2,4 +2,4 @@
 # encoding: utf-8
 
 from metagenomix.scripts import db_utils
-ncbi_db_utils.extract_subtaxa()
+db_utils.extract_subtaxa()
