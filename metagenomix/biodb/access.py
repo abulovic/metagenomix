@@ -8,11 +8,11 @@ from sqlalchemy.sql.expression import select
 
 _metadata = MetaData()
 
-table_gi_taxid_nuc = Table('gi_taxid_nucl', _metadata,
+table_gi_taxid_nuc = Table('nucleotide', _metadata,
     Column('gi', Integer, primary_key=True),
     Column('tax_id', Integer),
 )
-table_gi_taxid_prot = Table('gi_taxid_prot', _metadata,
+table_gi_taxid_prot = Table('protein', _metadata,
     Column('gi', Integer, primary_key=True),
     Column('tax_id', Integer),
 )
@@ -32,7 +32,8 @@ class DbQuery(object):
             unity_db_url = "mysql+mysqldb://root:root@localhost/unity"
         self.unity_db_url = unity_db_url
         if not ncbitax_db_url:
-            ncbitax_db_url = "mysql+mysqldb://root:root@localhost/ncbitax"
+            ncbitax_db_url = "postgres://gi_adm:gi_adm@localhost/gi_taxonomy"
+            #ncbitax_db_url = "mysql+mysqldb://root:root@localhost/ncbitax"
         self.ncbitax_db_url = ncbitax_db_url
         self._create_sessions()
 
