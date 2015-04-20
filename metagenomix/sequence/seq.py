@@ -232,7 +232,7 @@ class Genome(TargetSeq):
 	@classmethod
 	def from_header(cls, header, length=-1, detailed=False):
 		data = db.parse_genome_header(header)
-		accession = data['ref']
+		accession = data.get('ref', 'no-accession')
 		gi = int(data['gi'])
 		return cls(accession, gi, length, data['description'], detailed=detailed)
 
