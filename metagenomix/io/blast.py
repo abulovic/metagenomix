@@ -160,8 +160,8 @@ def parse_xml(input_file, db_type, annotate=True, detailed=False, entry_cnt=None
 				read_id = iter_children['Iteration_query-def'].text
 				for hit in hits:
 					hit_children = {e.tag: e for e in hit.getchildren()}
-					target_header = hit_children['Hit_id'].text
-					#target_header = hit_children['Hit_def'].text
+					#target_header = hit_children['Hit_id'].text
+					target_header = hit_children['Hit_def'].text
 					tid = get_seq_id(target_header, db_type)
 					if tid not in target_seqs:
 						target_len = int(hit_children['Hit_len'].text)
