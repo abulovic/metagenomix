@@ -30,7 +30,7 @@ def annotate_targets(read_alns, target_seqs):
 
 
 def parse_cds_sam(input_file, db_type, binary=False, annotate=True,
-				  read_alns=defaultdict(list), target_seqs={}, total_reads=None):
+				  read_alns=defaultdict(list), target_seqs={}, entry_cnt=None, detailed=False):
 	with timeit('Pysam load of the %s file (%s)' % (input_file.split(os.path.sep)[-1],
 													get_appropriate_file_size(input_file))):
 		if binary:
@@ -38,14 +38,14 @@ def parse_cds_sam(input_file, db_type, binary=False, annotate=True,
 		else:
 			samfile = pysam.Samfile(input_file, 'r')
 
-	if total_reads is not None:
-		_1perc_reads = total_reads / 100
+	if entry_cnt is not None:
+		_1perc_reads = entry_cnt / 100
 	data_access = DataAccess()
 	unmapped = set()
 	lengths = np.array(samfile.lengths)
 	with timeit('Sequence iteration'):
 		for i, ar in enumerate(samfile.fetch()):
-			if total_reads is not None:
+			if entry_cnt is not None:
 				if i % _1perc_reads == 0:
 					print '%d %%' % (i / _1perc_reads)
 			else:
