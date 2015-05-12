@@ -1,0 +1,33 @@
+#! /usr/bin/env python
+import sys
+import gzip
+import urllib
+import sqlite3 as lite
+
+gi_nucl_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz'
+gi_nucl_file = 'gi_taxid_nucl.dmp.gz'
+gi_prot_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_prot.dmp.gz'
+gi_nucl_file = 'gi_taxid_prot.dmp.gz'
+
+sys.stderr.write('Creating gi_tax.db database... ')
+database_name = 'gi_tax.db'
+conn = lite.connect(database_name)
+c = conn.cursor()
+c.execute('CREATE TABLE nucleotide (gi integer, tax integer)')
+sys.stderr.write('DONE\n')
+
+sys.stderr.write('Downloading {}...'.format(gi_nucl_file))
+urllib.urlretrieve(gi_nucl_url, gi_nucl_file)
+sys.stderr.write('DONE\n')
+
+sys.stderr.write('Inserting values into table NUCLEOTIDE...')
+with gzip.open(gi_nucl_file, 'rb') as gi_file:
+	for line in gi_file:
+		data = line.strip().split()
+		gi = int(data[0])
+		tax = int(data[1])
+		c.execute('INSERT INTO nucleotide VALUES (?,?)', (gi, tax))
+
+conn.commit()
+sys.stderr.write('DONE\n')s
+
