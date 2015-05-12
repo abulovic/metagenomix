@@ -77,7 +77,7 @@ def greedy():
 			report.mark('Loaded %d nodes.' % len(tt.nodes))
 
 		#profiling.get_read_overlap(target_seqs, read_alns, tt, all_reads)
-		profiling.sequential_read_set_analysis(read_alns, target_seqs, tt)
+		#profiling.sequential_read_set_analysis(read_alns, target_seqs, tt)
 
 		coverage_limit = 0.6
 		fold_limit = 1.
@@ -119,6 +119,8 @@ def greedy():
 			with report.timeit('Outputing gene expression'):
 				report.gene_expression(s2t_nofilt, tt, 'gene_expression_nofilt', assigned=False)
 				report.gene_expression(new_s2t, tt, 'gene_expression', assigned=True)
+
+		report.summary(read_alns, s2t_nofilt, new_s2t, args.original_fasta)
 
 
 def lca():

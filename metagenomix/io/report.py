@@ -172,3 +172,25 @@ class Report(object):
 					strain2count[t.tax_id] += 1
 				for strain_tax, count in sorted(strain2count.items(), reverse=True, key=lambda i: i[1]):
 					fout.write('%s, %d\n' % (tax_tree.nodes[strain_tax].organism_name, count))
+
+	def summary(self, read_aln, species_nofilt, species_final, input_fasta):
+		summary_data = {}
+		read_cnt = utils.get_seq_count(input_fasta)
+		summary_data['Reads in original sample'] = read_cnt
+
+		reads_with_aln_cnt = len(read_aln)
+		summary_data['Reads with at least one alignment'] = reads_with_aln_cnt
+
+		avg_aln_per_reads = sum([len(alns) for alns in read_aln.itervalues()]) / float(reads_with_aln_cnt)
+		summary_data['Average number of alignments per read'] = avg_aln_per_reads
+
+		all_species = len(species_nofilt)
+		summary_data['Species with at least one reported alignment'] = all_species
+
+		reported_species = len(species_final)
+		summary_data['Final reported species'] = reported_species
+
+		summary_file = os.path.join(self.output_dir, 'run-summary.txt')
+		with open(summary_file, 'w') as fout:
+			for name, value in summary_data.iteritems():
+				fout.write('{}:{}\n'.format(name, value))
