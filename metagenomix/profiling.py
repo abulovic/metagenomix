@@ -66,6 +66,25 @@ def get_read_overlap(target_seqs, read_alns, tax_tree, all_reads):
 			dfout.write(' '.join([str(entry) for entry in diff_matrix[i]][:limit]))
 			dfout.write('\n')
 
+def choose_strain(tax2target, cluster):
+	targets = []
+	target_probs = []
+	total_len = 0
+	total_fold = 0.
+	for tax in tax2target.keys():
+		if tax in cluster:
+			target = tax2target[tax]
+			targets.append(target)
+			total_len += target.alignment.length
+			total_fold += target.alignment.get_fold()
+	for target in targets:
+		#target_probs.append(target.alignment.length * target.alignment.get_coverage()\
+		#					* target.alignment.get_fold() / (total_len * total_fold))
+		target_probs.append(target.alignment.get_coverage())
+
+	target2prob = {t:p for t, p in zip(targets, target_probs)}
+	return sorted(target2prob.keys(), reverse=True, key=lambda t: target2prob[t])[0]
+
 def sequential_read_set_analysis(read_alns, target_seqs, tax_tree):
 	aln_reads = set(read_alns.keys())
 	tax2reads = {ts.tax_id: ts.alignment.reads for ts in target_seqs.values()}
@@ -146,11 +165,23 @@ def sequential_read_set_analysis(read_alns, target_seqs, tax_tree):
 		print '#READS (UNION):    %d/%d' % (union_len, total_reads)
 		print '#READS (INTSC):    %d/%d' % (intersect_len, total_reads)
 		for tax_id in tclusters[i]:
-			print tax_tree.get_org_name(tax_id), '(%.2f)' % (tax2target[tax_id].alignment.get_coverage()*100)
+			print tax_tree.get_org_name(tax_id), '(%.2f)' % (tax2target[tax_id].alignment.get_coverage()*100), ' (%d)' % tax2target[tax_id].alignment.length
 		total_perc += union_len / float(total_reads)
 		print 'Cumsum (perc):  ', total_perc
 		print
-		#import pdb
-		#pdb.set_trace()
+
+	res_tax2target = {}
+	for c in tclusters:
+		print 'CLUSTER', c
+		print 'LCA', tax_tree.get_org_name(tax_tree.find_lca(c))
+		target = choose_strain(tax2target, c)
+		print target.tax_id
+		print tax_tree.get_org_name(target.tax_id)
+		print target.alignment.length
+		print target.alignment.get_coverage()
+		print target.alignment.get_fold()
+		print
+		res_tax2target[target.tax_id] = target
 		#if total_perc > 0.999:
 		#	break
+	return res_tax2target
