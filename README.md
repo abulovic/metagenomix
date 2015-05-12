@@ -14,12 +14,16 @@ A short description of the motivation behind the creation and maintenance of the
 ## Installation
 
 To install Metagenomix, either clone or download this repository and run:
-    python setup.py build install
+```
+python setup.py build install
+```
 After you've built Metagenomix, you need to download the information on taxa names, ranks and relationships:
-    wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdmp.zip
-    unzip taxdmp.zip
-    dmp2taxtree nodes.dmp names.dmp ./metagenomix/
-    python setup.py build install
+```
+wget ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdmp.zip
+unzip taxdmp.zip
+dmp2taxtree nodes.dmp names.dmp ./metagenomix/
+python setup.py build install
+```
 After the build step, you need to setup the gi to taxonomy mapping database which will enable Metagenomix to map particular organism names to your GI identifiers.
 
 
@@ -31,6 +35,7 @@ If you have any questions, or wish to leave a comment, you can contact me on htt
 ## License
 
 Copyright (c) 2015 Ana Bulović metagen.zesoi.fer.hr
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
