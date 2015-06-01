@@ -9,12 +9,12 @@ from metagenomix import __version__
 
 
 requires = [
+    'psycopg2',
     'sqlalchemy',
     'lxml',
     'biopython',
     'numpy',
     'pysam',
-    'matplotlib'
 ]
 
 setup(

@@ -10,11 +10,11 @@ _metadata = MetaData()
 
 table_gi_taxid_nuc = Table('nucleotide', _metadata,
     Column('gi', Integer, primary_key=True),
-    Column('tax_id', Integer),
+    Column('tax', Integer),
 )
 table_gi_taxid_prot = Table('protein', _metadata,
     Column('gi', Integer, primary_key=True),
-    Column('tax_id', Integer),
+    Column('tax', Integer),
 )
 
 class DbQuery(object):
@@ -24,7 +24,7 @@ class DbQuery(object):
     '''Serves as a database query utility.'''
     def __init__(self, gi_taxonomy_url=None):
         if not gi_taxonomy_url:
-            gi_taxonomy_url = "postgres://gi_adm:gi_adm@localhost/gi_taxonomy"
+            gi_taxonomy_url = "sqlite:////home/abulovic/metagenomix/alg/bin/gi_tax.db"
         self.gi_taxonomy_url = gi_taxonomy_url
         self._create_sessions()
 
@@ -50,7 +50,7 @@ class DbQuery(object):
 
         sess = self.gi_tax_session()
         try:
-            s = select([table.c.gi, table.c.tax_id]
+            s = select([table.c.gi, table.c.tax]
                        ).where(table.c.gi.in_(gis))
             records = sess.execute(s)
 

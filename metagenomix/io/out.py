@@ -352,3 +352,8 @@ def transcript_comparison_json(metagenomix_json, metasim_json, output_json, tax_
 							 'species': org_name})
 		with open(output_json, 'w') as fout:
 			fout.write(json.dumps(product_list))
+
+def output_clusters(clusters, output_file):
+	with open(output_file, 'w') as fout:
+		for cluster in clusters:
+			fout.write('{}\n'.format(str(cluster)))

@@ -17,6 +17,7 @@ import metagenomix.stats.otu as otu_stats
 from metagenomix.io.report import Report
 import metagenomix.profiling as profiling
 from metagenomix.io.config import parse_config
+from metagenomix.em import exp_max
 
 
 def get_OTU_assign_option_parser():
@@ -76,8 +77,11 @@ def greedy():
 			tt = TaxTree()
 			report.mark('Loaded %d nodes.' % len(tt.nodes))
 
+		#exp_max(read_alns, target_seqs, tt)
 		#profiling.get_read_overlap(target_seqs, read_alns, tt, all_reads)
-		#profiling.sequential_read_set_analysis(read_alns, target_seqs, tt)
+		with report.timeit('Generating clusters'):
+			clusters = profiling.sequential_read_set_analysis(read_alns, target_seqs, tt)
+			report.output_clusters(clusters)
 
 		coverage_limit = 0.6
 		fold_limit = 1.
@@ -88,7 +92,7 @@ def greedy():
 			prefilt_transcripts = otu.greedy_transcript_assign(target_seqs, read_alns)
 			report.mark('#Transcripts (after read assignemnt)   : %d' % len(prefilt_transcripts))
 			#if args.db_type == 'cds':
-			final_transcripts = otu.filter_by_coverage_fold(prefilt_transcripts, 0.6, 1.)
+			final_transcripts = otu.filter_by_coverage_fold(prefilt_transcripts, 0.0, 1.)
 			#else:
 			#	final_transcripts = prefilt_transcripts
 			report.mark('#Transcripts (after cov-fold filtering): %d' % len(final_transcripts))

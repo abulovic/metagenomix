@@ -7,7 +7,6 @@ from metagenomix.tax import TaxTree
 from metagenomix.utils import timeit, get_file_type, get_species_transcript_distribution
 from metagenomix.io.sam import parse_cds_sam
 from metagenomix.io.megablast import parse_cds_megablast
-from metagenomix.stats.aln import get_read_aln_distribution, get_spec_transcript_distribution
 
 
 def get_parse_option_parser():
@@ -50,5 +49,3 @@ def parse():
 			print len(trans)
 			print ' '.join(map(lambda t: "(%.3f, %.3f)" % (t.total_coverage, t.coverage_fold), int1))
 			print
-	get_read_aln_distribution(read_alns, os.path.sep.join([namespace.output_dir, 'plot.png']))
-	get_spec_transcript_distribution(spec2trans, os.path.sep.join([namespace.output_dir, 'plot2.png']))

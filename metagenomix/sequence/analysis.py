@@ -19,6 +19,7 @@ class Alignment(object):
 		self.length = length
 		self.locations = {}
 		self.fold = 0
+		self.reads = set()
 
 
 class SimpleAlignment (Alignment):
@@ -32,6 +33,7 @@ class SimpleAlignment (Alignment):
 		if tstart > tend:
 			tstart, tend = tend, tstart
 		self.locations[read_id] = (tstart, tend)
+		self.reads.add(read_id)
 		self.fold += abs(tstart - tend) + 1
 
 	def _get_joint_regions(self):

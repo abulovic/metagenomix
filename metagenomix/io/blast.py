@@ -13,7 +13,7 @@ from metagenomix.sequence.seq import create_sequence, get_seq_id
 
 _location_pattern = re.compile("(\d+)")
 
-def _parse_n_lines(infile, n_lines, read_alns, target_seqs, db_type):
+def _parse_n_lines(infile, n_lines, read_alns, target_seqs, db_type, detailed):
 
 	new_reads = set()
 	for i, line in enumerate(infile):
@@ -45,7 +45,7 @@ def _parse_n_lines(infile, n_lines, read_alns, target_seqs, db_type):
 		if target_id not in [aln.target_id for aln in read_alns[read_id]]:
 			aln = BlastAlignment(read_id, target_id, qstart, qend, tstart, tend, e_value, bitscore)
 			read_alns[read_id].append(aln)
-			#target_seq.alignment.add_location(read_id, tstart, tend)
+			target_seq.alignment.add_location(read_id, tstart, tend)
 
 	return new_reads
 
@@ -122,7 +122,7 @@ def parse_tab_delimited(input_file, db_type, at_once=1e5, detailed=False,
 		with open(input_file, 'r') as fin:
 			for i in xrange(rolls):
 				with oneline_timeit('Step %d/%d' % (i, rolls)):
-					new_reads = _parse_n_lines(fin, at_once, read_alns, target_seqs, db_type)
+					new_reads = _parse_n_lines(fin, at_once, read_alns, target_seqs, db_type, detailed)
 					if filter_low_scoring:
 						_filter_low_scoring(read_alns, 100., 0.01, new_reads)
 

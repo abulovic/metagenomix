@@ -89,6 +89,10 @@ class Report(object):
 		out_dir = os.path.sep.join([self.output_dir, subdir])
 		out.output_reads(reads, out_dir, fname)
 
+	def output_clusters(self, clusters):
+		out_file = os.path.join(self.output_dir, 'composition', 'clusters.txt')
+		out.output_clusters(clusters, out_file)
+
 	def extract_reads_from_aln(self, alignment_file, aln_type, subdir='host'):
 		fsize = utils.get_appropriate_file_size(alignment_file)
 		self._report("ALN FILE: %s <%s>" % (alignment_file, fsize))
@@ -101,18 +105,10 @@ class Report(object):
 		fname = '.'.join(alignment_file.split(os.path.sep)[-1].split('.')[:-1]) + '.txt'
 		out.output_reads(reads, out_dir, fname)
 
-	def basic_read_stats(self, read_aln):
-		self._report('Reads with alignment: %d' % len(read_aln))
-		im_file = '%s%sread-aln-hist.png' % (self.output_dir, os.path.sep)
-		aln_stats.get_read_aln_distribution(read_aln, im_file)
-
 	def transcript_stats(self, species2transcript, tax_tree,
 							   naming_prefix, assigned=False,
 							   additional_ranks=('phylum',)):
 		# TODO: correct the aln_stats method to receive multiple ranks
-		im_file = '%s%sspecies-transcript-hist.png' % (self.output_dir, os.path.sep)
-		# an ugly and useless plot
-		# aln_stats.get_spec_transcript_distribution(species2transcript, im_file)
 		aln_stats.get_transcript_stats(species2transcript, tax_tree, self.output_dir,
 									   naming_prefix, tax_rank='phylum', assigned=assigned)
 		json_file = '{0}{1}composition{1}species-transcript-reads.json'.format(self.output_dir, os.path.sep)

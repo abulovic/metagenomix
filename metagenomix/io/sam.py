@@ -39,7 +39,7 @@ def parse_cds_sam(input_file, db_type, binary=False, annotate=True,
 			samfile = pysam.Samfile(input_file, 'r')
 
 	if entry_cnt is not None:
-		_1perc_reads = entry_cnt / 100
+		_1perc_reads = max(1, entry_cnt / 100)
 	data_access = DataAccess()
 	unmapped = set()
 	lengths = np.array(samfile.lengths)
@@ -57,7 +57,11 @@ def parse_cds_sam(input_file, db_type, binary=False, annotate=True,
 
 			read_id = ar.qname.split()[0]
 			tstart, tend = ar.aend - ar.alen, ar.aend
-			qstart, qend = ar.qstart, ar.qend
+			try:
+				qstart, qend = ar.qstart, ar.qend
+			except SystemError as e:
+				# pysam throws a System Error! :(
+				continue
 			if ar.tid == -1:
 				continue
 			target_name = samfile.getrname(ar.tid)
@@ -65,7 +69,10 @@ def parse_cds_sam(input_file, db_type, binary=False, annotate=True,
 			target_seq = create_sequence(target_name, target_len, db_type)
 			if target_seq.get_id() not in target_seqs:
 				target_seqs[target_seq.get_id()] = target_seq
+			else:
+				target_seq = target_seqs[target_seq.get_id()]
 
+			target_seq.alignment.add_location(read_id, tstart, tend)
 			aln = SamAlignment(read_id, target_seq.get_id(), qstart, qend, tstart,
 							   tend, ar.mapq)
 			if not ar.is_secondary:

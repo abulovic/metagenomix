@@ -10,6 +10,35 @@ from metagenomix.io.blast import parse_tab_delimited, parse_xml
 from metagenomix.io.sam import parse_cds_sam
 from metagenomix.biodb.data_access import DataAccess
 
+
+class OrgCluster(object):
+	def __init__(self, lca, strains, tax_tree, ureads, ireads, total_reads):
+		self.lca = lca
+		self.strains = strains
+		self.tax_tree =  tax_tree
+		self.ureads = ureads
+		self.ireads = ireads
+		self.total_reads = total_reads
+		self.percentage = float(len(self.ureads)) / self.total_reads
+
+	def get_name(self):
+		return self.tax_tree.get_org_name(self.lca)
+
+	def get_rank(self):
+		return self.tax_tree.get_org_rank(self.lca)
+
+	def get_percentage(self):
+		return self.percentage
+
+	def __str__(self):
+		return '%s|%s|%.2f' % (self.get_name(),
+							   self.get_rank(),
+							   self.get_percentage()*100)
+
+	def __lt__(self, other):
+		return len(self.ureads) < len(other.ureads)
+
+
 def tax_to_reads(read_alns, target_seqs, tax_tree, filter_low_cnt=False):
 	species2reads = defaultdict(set)
 	for read, alns in read_alns.iteritems():
@@ -115,6 +144,15 @@ def sequential_read_set_analysis(read_alns, target_seqs, tax_tree):
 		else:
 			solved = False
 			for i, (tc, rc) in enumerate(zip(tclusters, runion)):
+				#spec_tax = []
+				#for cluster_tax in tc:
+				#	spec_tax.append(tax_tree.get_parent_with_rank(cluster_tax, 'species'))
+				#current_spec_tax = tax_tree.get_parent_with_rank(tax, 'species')
+				#if current_spec_tax in spec_tax:
+				#	tc.add(tax)
+				#	rc |= reads
+				#	total_used_reads |= reads
+				#	continue
 				overlap = reads & rc
 				if len(overlap) > 0.95 * len(rc):
 					tc.add(tax)
@@ -155,10 +193,12 @@ def sequential_read_set_analysis(read_alns, target_seqs, tax_tree):
 
 	total_perc = 0
 	total_reads = len(read_alns)
+	clusters = []
 	for i, r in sorted(enumerate(runion), reverse=True, key=lambda v: len(v[1])):
 		if len(runion[i]) == 0:
 			continue
 		lca = tax_tree.find_lca(tclusters[i])
+		clusters.append(OrgCluster(lca, tclusters[i], tax_tree, r, rintersect[i], total_reads))
 		print 'Cluster[%2d]: %s (%s)' % (i, tax_tree.get_org_name(lca), tax_tree.get_org_rank(lca))
 		intersect_len = len(rintersect[i])
 		union_len = len(runion[i])
@@ -170,18 +210,6 @@ def sequential_read_set_analysis(read_alns, target_seqs, tax_tree):
 		print 'Cumsum (perc):  ', total_perc
 		print
 
-	res_tax2target = {}
-	for c in tclusters:
-		print 'CLUSTER', c
-		print 'LCA', tax_tree.get_org_name(tax_tree.find_lca(c))
-		target = choose_strain(tax2target, c)
-		print target.tax_id
-		print tax_tree.get_org_name(target.tax_id)
-		print target.alignment.length
-		print target.alignment.get_coverage()
-		print target.alignment.get_fold()
-		print
-		res_tax2target[target.tax_id] = target
-		#if total_perc > 0.999:
-		#	break
-	return res_tax2target
+	for c in clusters:
+		c.percentage = c.get_percentage() / total_perc
+	return clusters
