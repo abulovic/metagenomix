@@ -70,6 +70,7 @@ def greedy():
 				read_alns, target_seqs = parse_func(args.input_file, args.db_type, entry_cnt=entry_cnt, detailed=True)
 				report.mark('\tTarget sequences: %d' % len(target_seqs))
 
+
 		with report.timeit('GI2TAX database querying'):
 			utils.retrieve_tax_ids(target_seqs, args.db_type)
 
@@ -77,8 +78,6 @@ def greedy():
 			tt = TaxTree()
 			report.mark('Loaded %d nodes.' % len(tt.nodes))
 
-		#exp_max(read_alns, target_seqs, tt)
-		#profiling.get_read_overlap(target_seqs, read_alns, tt, all_reads)
 		with report.timeit('Generating clusters'):
 			clusters = profiling.sequential_read_set_analysis(read_alns, target_seqs, tt)
 			report.output_clusters(clusters)
@@ -105,8 +104,10 @@ def greedy():
 			report.mark('#Species (post-read-assignment): %d' % len(s2t_greedy))
 			report.rank_distribution(s2t_nofilt, tt, 'nofilt')
 			report.rank_distribution(s2t_greedy, tt, 'greedy')
+			report.rank_distribution(clusters, tt, 'clusters')
 			report.tax_tree(s2t_nofilt, tt, 'nofilt')
 			report.tax_tree(s2t_greedy, tt, 'greedy')
+			report.tax_tree(clusters, tt, 'clusters')
 
 		if args.db_type == 'cds':
 			new_s2t = otu.remove_orthologue_strains(s2t_greedy)

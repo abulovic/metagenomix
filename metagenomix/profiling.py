@@ -31,9 +31,10 @@ class OrgCluster(object):
 		return self.percentage
 
 	def __str__(self):
-		return '%s|%s|%.2f' % (self.get_name(),
-							   self.get_rank(),
-							   self.get_percentage()*100)
+		return '%s|%s|%.2f|%d' % (self.get_name(),
+							      self.get_rank(),
+							      self.get_percentage()*100,
+							      len(self.ureads))
 
 	def __lt__(self, other):
 		return len(self.ureads) < len(other.ureads)
@@ -212,4 +213,92 @@ def sequential_read_set_analysis(read_alns, target_seqs, tax_tree):
 
 	for c in clusters:
 		c.percentage = c.get_percentage() / total_perc
-	return clusters
+
+	# Let's remove the duplicates now
+	tax2clusters = defaultdict(list)
+	for c in clusters:
+		tax2clusters[c.lca].append(c)
+	new_clusters = []
+	for tax, clusters in tax2clusters.iteritems():
+		if len(clusters) == 1:
+			new_clusters.append(clusters[0])
+		else:
+			lca = clusters[0].lca
+			ureads = set()
+			ireads = set()
+			strains = set()
+			for c in clusters:
+				ureads |= c.ureads
+				ireads &= c.ireads
+				strains |= c.strains
+			new_clusters.append(OrgCluster(lca, strains, tax_tree, ureads, ireads, total_reads))
+
+	new_clusters.sort(reverse=True)
+
+	# Remove all clusters with 0 unique reads
+	i_to_delete = []
+	for i, c in enumerate(new_clusters):
+		unique = 0
+		for read_id in c.ureads:
+			if len(read_alns[read_id]) == 1:
+				unique += 1
+		total = len(c.ureads)
+		if tax_tree.get_org_rank(c.lca) in ('class', 'phylum', 'kingdom', 'superkingdom') or\
+		   c.lca in (1,131567):
+			print 'BAD CLUSTER', i, c, tax_tree.get_org_rank(c.lca)
+			max_overlap = 0
+			max_overlap_clust = None
+			for clust in new_clusters:
+				if clust.lca == c.lca:
+					continue
+				ureads = reduce(lambda a, b: a|b, [tax2reads[s] for s in clust.strains])
+				overlap = len(c.ureads & ureads)
+				if overlap > max_overlap:
+					max_overlap = overlap
+					max_overlap_clust = clust
+			i_to_delete.append(i)
+			if max_overlap_clust is not None:
+				max_overlap_clust.ureads |= c.ureads
+
+	print 'to delete:', i_to_delete
+	for i in reversed(i_to_delete):
+		new_clusters.pop(i)
+
+	# Remove all clusters with 0 unique reads
+	i_to_delete = []
+	for i, c in enumerate(new_clusters):
+		unique = 0
+		for read_id in c.ureads:
+			if len(read_alns[read_id]) == 1:
+				unique += 1
+		total = len(c.ureads)
+		#import pdb
+		#pdb.set_trace()
+		if total <= 5 or unique == 0 or (unique/float(total) < 0.05 and unique < 5):
+			max_overlap = 0
+			max_overlap_clust = None
+			for clust in new_clusters:
+				if clust.lca == c.lca:
+					continue
+				ureads = reduce(lambda a, b: a|b, [tax2reads[s] for s in clust.strains])
+				overlap = len(c.ureads & ureads)
+				if overlap > max_overlap:
+					max_overlap = overlap
+					max_overlap_clust = clust
+			if max_overlap_clust is None:
+				if total <= 5:
+					i_to_delete.append(i)
+				continue
+			i_to_delete.append(i)
+			max_overlap_clust.ureads |= c.ureads
+
+	for i in reversed(i_to_delete):
+		new_clusters.pop(i)
+
+	# TODO! MAKE THIS BETTER!
+	union_len = sum([len(c.ureads) for c in new_clusters])
+	total_perc = union_len / float(total_reads)
+	for c in new_clusters:
+		c.percentage = len(c.ureads) / float(union_len)
+
+	return new_clusters

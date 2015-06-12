@@ -197,6 +197,52 @@ The structure follows the principles of the taxonomic tree. The root node
 is the ancestor of all other nodes, and taxonomic parent is ancestor of
 its taxonomic children.
 '''
+
+def tax_tree_from_clusters(clusters, tax_tree, fname):
+	tax2info = dict()
+	all_nodes = set()
+	tax2info['organism_name'] = 'root'
+	tax2info['tax'] = 1
+	tax2info['children'] = []
+	tax2info['count'] = 0.
+	taxa = set([c.lca for c in clusters])
+	tax2cluster = {c.lca: c for c in clusters}
+	total_reads = float(sum([len(c.ureads) for c in clusters]))
+	for cluster in clusters:
+		tax = cluster.lca
+		if tax in (0, -1):
+			continue
+		all_nodes.update(tax_tree.get_lineage(tax))
+
+	def _update_node(root):
+		root_tax = root['tax']
+		children = filter(lambda node: node in tax_tree.child_nodes[root_tax], all_nodes)
+		for child in children:
+			if child in taxa:
+				count = len(tax2cluster[child].ureads) / total_reads * 100.
+				count = round(count, 2)
+			else:
+				count = 0.
+			new_dict = {'tax': child,
+						'organism_name': tax_tree.nodes[child].organism_name,
+						'children': [],
+						'count': count}
+			root['children'].append(_update_node(new_dict))
+		return root
+
+	def _update_counts(root):
+		if not tax_tree.child_nodes[root['tax']]:
+			return root['count']
+		else:
+			root['count'] += round(sum(map(lambda c: _update_counts(c), root['children'])), 2)
+			return root['count']
+
+	root = _update_node(tax2info)
+	_update_counts(root)
+
+	with open(fname, 'w') as fout:
+		fout.write(json.dumps(tax2info, indent=4, sort_keys=True))
+
 def output_tax_tree(species2transcript, tax_tree, fname):
 	tax2info = dict()
 	all_nodes = set()

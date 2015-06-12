@@ -140,7 +140,7 @@ class Report(object):
 		fname = '{0}{1}composition{1}{2}-readcount.csv'.format(self.output_dir,
 															   os.path.sep,
 															   naming_prefix)
-		out.species_readcount(species2transcript, tax_tree, fname)
+		#out.species_readcount(species2transcript, tax_tree, fname)
 
 
 	def tax2reads(self, tax2reads, tax_tree, naming_prefix, out_format):
@@ -153,7 +153,10 @@ class Report(object):
 											 naming_prefix)
 		template = os.path.join(viz.__path__[0], 'dendrogram-template.html')
 		output_html = '{0}{1}plots{1}{2}tax-tree.html'.format(self.output_dir, os.path.sep, naming_prefix)
-		out.output_tax_tree(species2transcript, tax_tree, fname)
+		if naming_prefix == 'clusters':
+			out.tax_tree_from_clusters(species2transcript, tax_tree, fname)
+		else:
+			out.output_tax_tree(species2transcript, tax_tree, fname)
 		out.default_d3_plot(fname, template, output_html)
 
 	def strains(self, species2transcript, tax_tree, prefix):
