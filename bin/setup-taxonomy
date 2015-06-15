@@ -29,5 +29,5 @@ with gzip.open(gi_nucl_file, 'rb') as gi_file:
 		c.execute('INSERT INTO nucleotide VALUES (?,?)', (gi, tax))
 
 conn.commit()
-sys.stderr.write('DONE\n')s
+sys.stderr.write('DONE\n')
 
