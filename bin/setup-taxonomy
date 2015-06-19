@@ -1,33 +1,96 @@
 #! /usr/bin/env python
 import sys
+import time
 import gzip
 import urllib
 import sqlite3 as lite
+from argparse import ArgumentParser
+from contextlib import contextmanager
+
+@contextmanager
+def timer(name):
+	start = time.time()
+	yield
+	stop = time.time()
+	sys.stderr.write('Execution of <%s> lasted: %.2f seconds.\n\n' % (name, stop-start))
+
 
 gi_nucl_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_nucl.dmp.gz'
 gi_nucl_file = 'gi_taxid_nucl.dmp.gz'
 gi_prot_url = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/gi_taxid_prot.dmp.gz'
-gi_nucl_file = 'gi_taxid_prot.dmp.gz'
+gi_prot_file = 'gi_taxid_prot.dmp.gz'
 
-sys.stderr.write('Creating gi_tax.db database... ')
-database_name = 'gi_tax.db'
-conn = lite.connect(database_name)
-c = conn.cursor()
-c.execute('CREATE TABLE nucleotide (gi integer, tax integer)')
-sys.stderr.write('DONE\n')
+urls = {'nucl': gi_nucl_url, 'prot': gi_prot_url}
+files = {'nucl': gi_nucl_file, 'prot': gi_prot_file}
+tables = {'nucl': 'nucleotide', 'prot': 'protein'}
 
-sys.stderr.write('Downloading {}...'.format(gi_nucl_file))
-urllib.urlretrieve(gi_nucl_url, gi_nucl_file)
-sys.stderr.write('DONE\n')
+def get_argument_parser():
+	ap = ArgumentParser(usage="Download and setup a NCBI gi->tax database")
+	ap.add_argument("--nucl", action="store_true",
+					help="Download and setup nucleotide gi->tax mappings")
+	ap.add_argument("--prot", action="store_true",
+					help="Download and setup protein gi->tax mappings")
+	ap.add_argument("--overwrite", action="store_true",
+					help="If table entries already exist, overwrite them.")
+	ap.add_argument("--nfile", help="If you already downloaded {} file,\
+									 provide the path to it here.".format(gi_nucl_file))
+	ap.add_argument("--pfile", help="If you already downloaded {} file,\
+									 provide the path to it here.".format(gi_prot_file))
+	return ap
 
-sys.stderr.write('Inserting values into table NUCLEOTIDE...')
-with gzip.open(gi_nucl_file, 'rb') as gi_file:
-	for line in gi_file:
-		data = line.strip().split()
-		gi = int(data[0])
-		tax = int(data[1])
-		c.execute('INSERT INTO nucleotide VALUES (?,?)', (gi, tax))
+def gi_tax_mapping(cursor, _type, overwrite=False, _file=None):
+	url = urls[_type]
+	dest_file = files[_type]
+	table_name = tables[_type]
 
-conn.commit()
-sys.stderr.write('DONE\n')
+	cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+	res = cursor.fetchone()
+	if res is not None:
+		if overwrite:
+			cursor.execute("DROP TABLE {}".format(table_name))
+		else:
+			sys.stderr.write("Table {} exists, --overwrite not specified, nothing to do here.\n".format(table_name))
+			return
+	cursor.execute('CREATE TABLE {} (gi integer, tax integer)'.format(table_name))
 
+	if _file is None:
+		with timer('DOWNLOAD'):
+			sys.stderr.write('Downloading {}...'.format(dest_file))
+			urllib.urlretrieve(url, dest_file)
+			sys.stderr.write('DONE\n')
+
+	with timer('POPULATING TABLE'):
+		sys.stderr.write('Inserting values into table {}... '.format(table_name))
+		with gzip.open(dest_file, 'rb') as gi_file:
+			try:
+				for line in gi_file:
+					data = line.strip().split()
+					gi = int(data[0])
+					tax = int(data[1])
+					cursor.execute('INSERT INTO {} VALUES (?,?)'.format(table_name), (gi, tax))
+			except IOError, e:
+				sys.stderr.write('File invalid: {}\nTry downloading the file anew.\n'.format(str(e)))
+		sys.stderr.write('DONE\n')
+
+def main():
+	ap = get_argument_parser()
+	args = ap.parse_args()
+	if not (args.nucl or args.prot):
+		ap.error('No action requested, choose either --nucl or --prot, or both.')
+
+	sys.stderr.write('Creating gi_tax.db database... ')
+	database_name = 'gi_tax.db'
+	conn = lite.connect(database_name)
+	c = conn.cursor()
+	sys.stderr.write('DONE\n')
+
+	if args.nucl:
+		gi_tax_mapping(c, 'nucl', args.overwrite, args.nfile)
+	if args.prot:
+		gi_tax_mapping(c, 'prot', args.overwrite, args.pfile)
+
+	conn.commit()
+	sys.stderr.write('Exiting\n')
+
+if __name__ == '__main__':
+	main()
