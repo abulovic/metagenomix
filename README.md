@@ -13,7 +13,17 @@ A short description of the motivation behind the creation and maintenance of the
 
 ## Installation
 
-To install Metagenomix, either clone or download this repository and run:
+To install Metagenomix, first we need to setup the mapping of NCBI gis to taxon identifiers.
+The script used to setup the mappings is located in the bin folder. It can be used to download and setup the mappings for both nucleotide and protein gi -> tax mappings.
+For instance, if we are to create a database with just the nucleotide mappings, we would run:
+```
+./bin/setup-taxonomy --nucl
+```
+This command will download the latest nucleic gi->tax mappings from ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy, and create a sqlite3 database with a single table named nucleotide which has two columns: gi and tax. The mapping files are pretty large, and this step can take quite a long time.
+The script has some additional options, which can be viewed by running:
+```
+./bin/setup-taxonomy --help
+```
 ```
 python setup.py build install
 ```
