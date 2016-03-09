@@ -25,7 +25,7 @@ setup(
     author = 'Ana Bulovic',
     author_email = 'bulovic.ana@gmail.com',
     license = 'MIT',
-    long_description = open('README.txt').read(),
+    long_description = open('README.md').read(),
     packages = find_packages(),
     scripts = ['bin/store-input-to-db', 'bin/store-blast-to-db',
                'bin/analyze-alignment', 'bin/prot-freq-db', 'bin/parse-mgb',
@@ -36,7 +36,7 @@ setup(
                'bin/generate-consensus'],
     package_data = {'metagenomix': ['taxid2namerank', 'ncbi_tax_tree'],
                     'metagenomix.visualization': ['*.html', '*.css', '*.js']},
-    data_files = [('', ['README.txt'])],
+    data_files = [('', ['README.md'])],
     install_requires=requires,
     classifiers = [
         'Development Status :: 3 - Alpha',
